@@ -1,0 +1,6 @@
+{
+  "name": "Catálogo de Eletrônicos",
+  "description": "Catálogo e gerenciamento de produtos eletrônicos conectado a uma API externa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
