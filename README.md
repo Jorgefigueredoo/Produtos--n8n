@@ -125,6 +125,26 @@ npm run dev
 
 Acesse a URL exibida no terminal (geralmente `http://localhost:3000`).
 
+### Dashboard com gráficos (Recharts)
+
+O topo do catálogo exibe um painel (`src/components/DashboardCharts.tsx`) montado com a biblioteca [Recharts](https://recharts.org/):
+
+- **Faixa de KPIs**: Total de Produtos, Valor do Inventário, Categorias Ativas e Estoque Crítico (≤3).
+- **Produtos por Categoria** (gráfico de barras horizontal).
+- **Valor do Inventário** por categoria (gráfico de pizza/rosca, soma de `preco × estoque`).
+- **Distribuição de Estoque** em faixas: Crítico (≤3), Baixo (4–10) e Saudável (>10).
+
+Todas as agregações são calculadas a partir da lista de produtos vinda do n8n, então o painel se atualiza junto com o polling.
+
+> A dependência `recharts` é instalada automaticamente pelo `npm install`. Caso esteja partindo de uma versão antiga do projeto, rode `npm install recharts`.
+
+### Robustez de dados (busca e ordenação)
+
+A busca e a ordenação em `App.tsx` são tolerantes a dados imperfeitos vindos da planilha:
+
+- Campos de texto são normalizados com `String(value ?? '')` antes de `.toLowerCase()` / `.localeCompare()`, evitando erros quando uma célula está vazia ou o `id` chega como número.
+- Campos numéricos (`preco`, `estoque`) usam `Number(value) || 0`, evitando `NaN` na ordenação quando a célula está vazia ou inválida.
+
 ---
 
 ## 6. Como rodar o projeto (rotina de uso)
