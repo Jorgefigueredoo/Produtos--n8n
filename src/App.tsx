@@ -9,16 +9,11 @@ import {
   RotateCw, 
   List, 
   Grid2X2, 
-  Search, 
-  AlertCircle, 
-  Database, 
-  Laptop, 
-  Boxes, 
-  TrendingUp, 
-  AlertTriangle,
-  Sparkles,
-  RefreshCw,
-  FolderOpen
+  Search,
+  AlertCircle,
+  Database,
+  Laptop,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -28,6 +23,7 @@ import ProductTable from './components/ProductTable';
 import ProductCardList from './components/ProductCardList';
 import ProductFormModal from './components/ProductFormModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
+import DashboardCharts from './components/DashboardCharts';
 
 // Dedicated base URL specified in requirements
 const API_BASE_URL = "http://localhost:5678/webhook";
@@ -228,15 +224,17 @@ export default function App() {
   const processedProducts = React.useMemo(() => {
     let result = [...products];
 
-    // Search query match (fuzzy)
+    // Search query match (fuzzy) — guarded against missing/non-string fields
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
+      const matches = (value: unknown) =>
+        String(value ?? '').toLowerCase().includes(query);
       result = result.filter(
-        p => 
-          p.nome.toLowerCase().includes(query) || 
-          p.categoria.toLowerCase().includes(query) ||
-          p.descricao.toLowerCase().includes(query) ||
-          p.id.toLowerCase().includes(query)
+        p =>
+          matches(p.nome) ||
+          matches(p.categoria) ||
+          matches(p.descricao) ||
+          matches(p.id)
       );
     }
 
@@ -245,41 +243,31 @@ export default function App() {
       result = result.filter(p => p.categoria === selectedCategory);
     }
 
-    // Sorting definition
+    // Sorting definition — guarded against missing/non-string/non-numeric fields
     result.sort((a, b) => {
       if (sortBy === 'nome') {
-        return a.nome.localeCompare(b.nome);
+        return String(a.nome ?? '').localeCompare(String(b.nome ?? ''));
       }
       if (sortBy === 'categoria') {
-        return a.categoria.localeCompare(b.categoria);
+        return String(a.categoria ?? '').localeCompare(String(b.categoria ?? ''));
       }
       if (sortBy === 'preco-cres') {
-        return a.preco - b.preco;
+        return (Number(a.preco) || 0) - (Number(b.preco) || 0);
       }
       if (sortBy === 'preco-decres') {
-        return b.preco - a.preco;
+        return (Number(b.preco) || 0) - (Number(a.preco) || 0);
       }
       if (sortBy === 'estoque-cres') {
-        return a.estoque - b.estoque;
+        return (Number(a.estoque) || 0) - (Number(b.estoque) || 0);
       }
       if (sortBy === 'estoque-decres') {
-        return b.estoque - a.estoque;
+        return (Number(b.estoque) || 0) - (Number(a.estoque) || 0);
       }
       return 0;
     });
 
     return result;
   }, [products, searchQuery, selectedCategory, sortBy]);
-
-  // Advanced KPIs calculation
-  const stats = React.useMemo(() => {
-    const totalCount = products.length;
-    const totalValue = products.reduce((acc, curr) => acc + (curr.preco * curr.estoque), 0);
-    const uniqueCats = new Set(products.map(p => p.categoria)).size;
-    const lowStockCount = products.filter(p => p.estoque <= 3).length;
-
-    return { totalCount, totalValue, uniqueCats, lowStockCount };
-  }, [products]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20" id="applet-container">
@@ -383,56 +371,8 @@ export default function App() {
       {/* Main body viewport */}
       <main className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
         
-        {/* KPI Dashboard Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" id="stats-grid">
-          {/* Total catalog items */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Produtos</p>
-              <h3 className="text-2xl font-bold tracking-tight text-slate-900 mt-1">{stats.totalCount}</h3>
-            </div>
-            <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shadow-3xs">
-              <Boxes className="h-5 w-5" />
-            </div>
-          </div>
-
-          {/* Catalog financial value */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Valor do Inventário</p>
-              <h3 className="text-2xl font-bold tracking-tight text-slate-900 mt-1 font-mono">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalValue)}
-              </h3>
-            </div>
-            <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shadow-3xs">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-          </div>
-
-          {/* Active unique categories */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Categorias Ativas</p>
-              <h3 className="text-2xl font-bold tracking-tight text-slate-900 mt-1">{stats.uniqueCats}</h3>
-            </div>
-            <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shadow-3xs">
-              <FolderOpen className="h-5 w-5" />
-            </div>
-          </div>
-
-          {/* Critical low Stock limit */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estoque Crítico (≤3)</p>
-              <h3 className={`text-2xl font-bold tracking-tight mt-1 ${stats.lowStockCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
-                {stats.lowStockCount}
-              </h3>
-            </div>
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shadow-3xs ${stats.lowStockCount > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
+        {/* KPI Dashboard with Recharts visualizations */}
+        <DashboardCharts products={products} />
 
         {/* Catalog Control Area: Filters, View choice, Add Product button */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white border border-slate-200 rounded-xl p-4 shadow-3xs" id="controls-panel">
